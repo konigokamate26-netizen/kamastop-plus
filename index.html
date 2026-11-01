@@ -1,1 +1,50 @@
-
+<!DOCTYPE html>
+<html lang="fr"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101827">
+<meta name="description" content="KAMASTOP+ : la marketplace du Mali.">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>KAMASTOP+ | Marketplace</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f5f8;color:#182033}
+header{background:#101827;color:white;padding:22px 16px}header h1{margin:0;color:#ffc928;font-size:28px}header p{margin:7px 0 0;color:#ddd}
+main{max-width:850px;margin:auto;padding:16px}input,select,textarea{width:100%;padding:13px;margin:7px 0;border:1px solid #ddd;border-radius:9px;font-size:15px}
+.categories{display:flex;gap:8px;overflow:auto;margin:15px 0}.categories button,.primary{border:0;border-radius:9px;padding:12px;background:#ffc928;color:#101827;font-weight:bold;white-space:nowrap}
+h2{font-size:20px}.products{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.product{background:white;border-radius:12px;padding:12px;box-shadow:0 2px 8px #0000000d}.photo{height:105px;background:#e9edf3;border-radius:8px;display:grid;place-items:center;font-size:38px}
+.product h3{font-size:16px;margin:10px 0 5px}.price{color:#b47700;font-weight:bold}small{color:#687080}
+section{background:white;padding:16px;border-radius:12px;margin-top:20px}.primary{width:100%;margin-top:8px;cursor:pointer}
+footer{text-align:center;padding:25px;color:#687080;font-size:13px}@media(min-width:650px){.products{grid-template-columns:repeat(3,1fr)}}
+</style></head><body>
+<header><h1>KAMASTOP+</h1><p>La marketplace du Mali : acheter et vendre facilement.</p></header>
+<main>
+<input id="search" placeholder="Rechercher un produit..." oninput="render()">
+<div class="categories">
+<button onclick="category='Tous';render()">Tout</button><button onclick="category='Téléphones';render()">Téléphones</button>
+<button onclick="category='Mode';render()">Mode</button><button onclick="category='Beauté';render()">Beauté</button>
+<button onclick="category='Maison';render()">Maison</button><button onclick="category='Véhicules';render()">Véhicules</button></div>
+<h2>Les annonces</h2><div id="products" class="products"></div>
+<section><h2>Publier une annonce</h2><form id="adForm">
+<input id="name" placeholder="Nom du produit" required><input id="price" type="number" placeholder="Prix en FCFA" required>
+<select id="cat"><option>Téléphones</option><option>Mode</option><option>Beauté</option><option>Maison</option><option>Véhicules</option><option>Autres</option></select>
+<textarea id="description" placeholder="Description du produit"></textarea><button class="primary">Envoyer mon annonce</button></form><p id="notice"></p></section>
+<section><h2>Vendre sur KAMASTOP+</h2><p>Les annonces sont soumises à validation par l'administrateur.</p>
+<p>Contact administrateur : <strong>+223 76 07 13 97</strong></p><p>Paiements prévus : Orange Money et Moov Money.</p></section>
+</main><footer>© KAMASTOP+ — Marketplace du Mali</footer>
+<script>
+let category='Tous';let ads=[
+{name:'Smartphone',price:'85 000',cat:'Téléphones',emoji:'📱'},
+{name:'Chaussures tendance',price:'15 000',cat:'Mode',emoji:'👟'},
+{name:'Parfum',price:'12 500',cat:'Beauté',emoji:'🧴'}];
+function render(){let q=document.getElementById('search').value.toLowerCase();
+let list=ads.filter(a=>(category==='Tous'||a.cat===category)&&a.name.toLowerCase().includes(q));
+document.getElementById('products').innerHTML=list.map(a=>`<div class="product"><div class="photo">${a.emoji||'📦'}</div><h3>${a.name}</h3><div class="price">${a.price} FCFA</div><small>${a.cat} · Démonstration</small></div>`).join('')||'<p>Aucune annonce trouvée.</p>';}
+document.getElementById('adForm').addEventListener('submit',function(e){e.preventDefault();
+ads.unshift({name:document.getElementById('name').value,price:Number(document.getElementById('price').value).toLocaleString('fr-FR'),cat:document.getElementById('cat').value,emoji:'📦'});
+document.getElementById('notice').textContent='Annonce ajoutée à cette démonstration. Elle doit être validée par l’administrateur.';
+this.reset();category='Tous';render();});render();
+</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(console.error));}</script>
+</body></html>
