@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101827"><meta name="description" content="KAMASTOP+ : la marketplace du Mali.">
+<link rel="manifest" href="./manifest.json"><link rel="icon" href="./icône-192.png">
+<title>KAMASTOP+ | Marketplace</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f5f8;color:#182033}
+header{background:#101827;color:white;padding:22px 16px}header h1{margin:0;color:#ffc928;font-size:28px}
+main{max-width:900px;margin:auto;padding:16px}input,select,textarea{width:100%;padding:13px;margin:7px 0;border:1px solid #ddd;border-radius:9px;font-size:15px}
+button{cursor:pointer;border:0;border-radius:9px;padding:12px;font-weight:bold}.primary{background:#ffc928;color:#101827}.secondary{background:#e8edf5;color:#182033}.danger{background:#ffe2e2;color:#9b1c1c}
+.wide{width:100%;margin-top:8px}.row{display:flex;gap:8px;flex-wrap:wrap}.row button{flex:1}
+section{background:white;padding:16px;border-radius:12px;margin-top:20px}.hidden{display:none!important}.notice{padding:10px;background:#eef4ff;border-radius:8px}
+.categories{display:flex;gap:8px;overflow:auto;margin:15px 0}.categories button{background:#ffc928;white-space:nowrap}
+.products{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.product{background:white;border-radius:12px;padding:12px;box-shadow:0 2px 8px #0000000d;overflow-wrap:anywhere}
+.photo{height:85px;background:#e9edf3;border-radius:8px;display:grid;place-items:center;font-size:36px}.price{color:#986300;font-weight:bold}small{color:#687080}
+footer{text-align:center;padding:25px;color:#687080}@media(min-width:650px){.products{grid-template-columns:repeat(3,1fr)}}
+</style></head><body>
+<header><h1>KAMASTOP+</h1><p>La marketplace du Mali : acheter et vendre facilement.</p></header>
+<main>
+<section><h2>Mon compte</h2><div id="authArea">
+<input id="email" type="email" placeholder="Adresse e-mail"><input id="password" type="password" placeholder="Mot de passe (6 caractères minimum)">
+<div class="row"><button class="primary" id="loginBtn">Se connecter</button><button class="secondary" id="registerBtn">Créer un compte vendeur</button></div></div>
+<div id="accountArea" class="hidden"><p id="welcome"></p><button class="secondary" id="logoutBtn">Se déconnecter</button></div>
+<p id="authNotice" class="notice">Connecte-toi ou crée un compte pour publier une annonce.</p></section>
+<input id="search" placeholder="Rechercher un produit...">
+<div class="categories">
+<button data-cat="Tous">Tout</button><button data-cat="Téléphones">Téléphones</button><button data-cat="Mode">Mode</button><button data-cat="Beauté">Beauté</button><button data-cat="Maison">Maison</button><button data-cat="Véhicules">Véhicules</button><button data-cat="Autres">Autres</button></div>
+<h2>Les annonces approuvées</h2><div id="products" class="products">Chargement...</div>
+<section id="adSection" class="hidden"><h2>Publier une annonce</h2><p>Ton annonce sera vérifiée par l'administrateur avant publication.</p>
+<form id="adForm"><input id="adName" placeholder="Nom du produit" required maxlength="100"><input id="adPrice" type="number" min="1" placeholder="Prix en FCFA" required>
+<select id="adCat"><option>Téléphones</option><option>Mode</option><option>Beauté</option><option>Maison</option><option>Véhicules</option><option>Autres</option></select>
+<textarea id="adDescription" placeholder="Description du produit" maxlength="1500"></textarea><button class="primary wide">Envoyer mon annonce</button></form><p id="adNotice" class="notice"></p></section>
+<section id="myAdsSection" class="hidden"><h2>Mes annonces</h2><div id="myAds"></div></section>
+<section id="adminSection" class="hidden"><h2>Administration – Annonces à valider</h2><div id="adminAds">Chargement...</div></section>
+<section><h2>Vendre sur KAMASTOP+</h2><p>Contact administrateur : <strong>+223 76 07 13 97</strong></p><p>Paiements prévus : Orange Money et Moov Money. Paiements en ligne non activés.</p></section>
+</main><footer>© KAMASTOP+ — Marketplace du Mali</footer>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {getFirestore,collection,doc,setDoc,addDoc,getDoc,getDocs,query,where,serverTimestamp,updateDoc} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+const firebaseConfig={
+apiKey:"AIzaSyB3HveCwT-8ztw9t6XiTOOWWk4m1JqS37s",
+authDomain:"kamastop-plus.firebaseapp.com",
+projectId:"kamastop-plus",
+storageBucket:"kamastop-plus.firebasestorage.app",
+messagingSenderId:"83863929345",
+appId:"1:83863929345:web:eda9f50cc268aa8f283600",
+measurementId:"G-JM2CPTKCDD"};
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
+let currentUser=null,isAdmin=false,selectedCategory="Tous";
+const $=id=>document.getElementById(id),say=(id,t)=>$(id).textContent=t;
+const safe=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money=v=>Number(v||0).toLocaleString("fr-FR")+" FCFA";
+function err(e){const m={"auth/invalid-email":"Adresse e-mail invalide.","auth/weak-password":"Mot de passe trop faible (6 caractères minimum).","auth/email-already-in-use":"Cette adresse possède déjà un compte.","auth/invalid-credential":"Adresse e-mail ou mot de passe incorrect.","auth/network-request-failed":"Vérifie ta connexion Internet."};return m[e.code]||e.message||"Erreur inconnue."}
+$("loginBtn").onclick=async()=>{try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);say("authNotice","Connexion réussie.")}catch(e){say("authNotice","Connexion impossible : "+err(e))}};
+$("registerBtn").onclick=async()=>{const email=$("email").value.trim(),password=$("password").value;if(password.length<6){say("authNotice","Le mot de passe doit contenir au moins 6 caractères.");return}try{const r=await createUserWithEmailAndPassword(auth,email,password);await setDoc(doc(db,"users",r.user.uid),{name:email.split("@")[0],email,role:"seller",createdAt:serverTimestamp()});say("authNotice","Compte vendeur créé avec succès !")}catch(e){say("authNotice","Création impossible : "+err(e))}};
+$("logoutBtn").onclick=()=>signOut(auth);
+$("search").oninput=renderProducts;
+document.querySelectorAll("[data-cat]").forEach(b=>b.onclick=()=>{selectedCategory=b.dataset.cat;renderProducts()});
+$("adForm").onsubmit=async e=>{e.preventDefault();if(!currentUser)return;try{await addDoc(collection(db,"listings"),{title:$("adName").value.trim(),price:Number($("adPrice").value),category:$("adCat").value,description:$("adDescription").value.trim(),sellerId:currentUser.uid,sellerEmail:currentUser.email||"",status:"pending",createdAt:serverTimestamp()});$("adForm").reset();say("adNotice","Annonce envoyée ! Elle sera visible après validation.");await renderMyAds();if(isAdmin)await renderAdminAds()}catch(x){say("adNotice","Envoi impossible : "+err(x))}};
+onAuthStateChanged(auth,async user=>{currentUser=user;isAdmin=false;$("authArea").classList.toggle("hidden",!!user);$("accountArea").classList.toggle("hidden",!user);$("adSection").classList.toggle("hidden",!user);$("myAdsSection").classList.toggle("hidden",!user);$("adminSection").classList.add("hidden");
+if(user){$("welcome").textContent="Connecté : "+(user.email||"vendeur");try{const a=await getDoc(doc(db,"users","admin"));isAdmin=a.exists()&&a.data().email===user.email}catch(e){console.error(e)}if(isAdmin)$("adminSection").classList.remove("hidden");say("authNotice",isAdmin?"Bienvenue, administrateur.":"Bienvenue sur KAMASTOP+.");await renderMyAds();if(isAdmin)await renderAdminAds()}else{say("authNotice","Connecte-toi ou crée un compte pour publier une annonce.");$("myAds").innerHTML=""}await renderProducts()});
+async function renderProducts(){try{const s=await getDocs(query(collection(db,"listings"),where("status","==","approved")));const term=$("search").value.toLowerCase();const a=s.docs.map(d=>d.data()).filter(x=>(selectedCategory==="Tous"||x.category===selectedCategory)&&(String(x.title||"").toLowerCase().includes(term)||String(x.description||"").toLowerCase().includes(term)));$("products").innerHTML=a.length?a.map(x=>`<article class="product"><div class="photo">📦</div><h3>${safe(x.title)}</h3><div class="price">${money(x.price)}</div><small>${safe(x.category)}</small><p>${safe(x.description||"")}</p></article>`).join(""):"<p>Aucune annonce approuvée pour le moment.</p>"}catch(e){$("products").textContent="Chargement impossible. Vérifie les règles Firestore."}}
+async function renderMyAds(){if(!currentUser)return;try{const s=await getDocs(query(collection(db,"listings"),where("sellerId","==",currentUser.uid)));$("myAds").innerHTML=s.empty?"Tu n'as pas encore publié d'annonce.":s.docs.map(d=>{const x=d.data();return `<p>${safe(x.title)} — ${money(x.price)} — Statut : <strong>${safe(x.status)}</strong></p>`}).join("")}catch(e){$("myAds").textContent="Impossible de charger tes annonces : "+err(e)}}
+async function renderAdminAds(){if(!isAdmin)return;try{const s=await getDocs(collection(db,"listings"));const a=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.status==="pending");$("adminAds").innerHTML=a.length?a.map(x=>`<article class="product" style="margin:10px 0"><h3>${safe(x.title)}</h3><p>${money(x.price)} · ${safe(x.category)}</p><p>${safe(x.description||"")}</p><small>Vendeur : ${safe(x.sellerEmail||x.sellerId)}</small><div class="row"><button class="primary" data-approve="${safe(x.id)}">Approuver</button><button class="danger" data-reject="${safe(x.id)}">Refuser</button></div></article>`).join(""):"Aucune annonce en attente.";document.querySelectorAll("[data-approve]").forEach(b=>b.onclick=()=>moderate(b.dataset.approve,"approved"));document.querySelectorAll("[data-reject]").forEach(b=>b.onclick=()=>moderate(b.dataset.reject,"rejected"))}catch(e){$("adminAds").textContent="Accès administrateur impossible : "+err(e)}}
+async function moderate(id,status){if(!isAdmin)return;try{await updateDoc(doc(db,"listings",id),{status});await renderAdminAds();await renderProducts()}catch(e){alert("Modification impossible : "+err(e))}}
+if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(console.error));
+</script></body></html>
