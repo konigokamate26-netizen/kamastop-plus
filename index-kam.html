@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#123c2b">
+  <title>KAMASTOP+ — Place de marché</title>
+  <link rel="manifest" href="./manifest.json">
+  <style>
+    :root{--green:#123c2b;--gold:#e0ad38;--bg:#f4f6f4;--ink:#18221c}
+    *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--ink)}
+    header{background:var(--green);color:white;padding:18px 16px}
+    .wrap{max-width:900px;margin:auto;padding:16px}
+    h1{margin:0;font-size:25px}header p{margin:6px 0 0;color:#e8eee9}
+    nav{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+    button{border:0;border-radius:9px;padding:11px 14px;font-weight:700;background:var(--gold);color:#1c241e;cursor:pointer}
+    button.secondary{background:#e8eee9;color:var(--green)}button.danger{background:#f4d8d5;color:#842b22}
+    button:disabled{opacity:.55}
+    .panel{background:white;border-radius:13px;padding:16px;margin:14px 0;box-shadow:0 2px 12px #0000000d}
+    h2{font-size:20px;margin:0 0 12px;color:var(--green)}
+    label{display:block;font-weight:700;margin:10px 0 5px}
+    input,textarea,select{width:100%;padding:12px;border:1px solid #cbd5ce;border-radius:8px;font:inherit;background:white}
+    textarea{min-height:90px;resize:vertical}.hidden{display:none!important}
+    .muted{color:#647168;font-size:14px}.status{padding:10px;border-radius:8px;background:#edf3ee;margin:10px 0}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+    .item{border:1px solid #e0e7e1;border-radius:10px;padding:13px}
+    .item h3{margin:0 0 7px}.price{font-weight:700;color:var(--green)}
+    .topline{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+    a{color:var(--green)}footer{text-align:center;padding:20px;color:#657168;font-size:13px}
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>KAMASTOP+</h1>
+    <p>La place de marché au Mali — Achetez et vendez simplement.</p>
+    <nav>
+      <button class="secondary" onclick="showSection('home')">Accueil</button>
+      <button class="secondary" onclick="showSection('account')">Compte / Connexion</button>
+      <button onclick="showSection('publish')">Publier une annonce</button>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+  <div id="notice" class="status hidden" role="status"></div>
+
+  <section id="home" class="panel">
+    <div class="topline"><h2>Annonces disponibles</h2><button class="secondary" onclick="loadPublicListings()">Actualiser</button></div>
+    <input id="search" placeholder="Rechercher un produit..." oninput="filterListings()">
+    <div id="publicListings" class="grid" style="margin-top:14px"><p class="muted">Chargement des annonces…</p></div>
+  </section>
+
+  <section id="account" class="panel hidden">
+    <h2>Créer un compte vendeur</h2>
+    <label for="regName">Nom complet</label><input id="regName" autocomplete="name" placeholder="Votre nom">
+    <label for="regEmail">Adresse e-mail</label><input id="regEmail" type="email" autocomplete="email" placeholder="vous@exemple.com">
+    <label for="regPassword">Mot de passe</label><input id="regPassword" type="password" autocomplete="new-password" placeholder="Au moins 6 caractères">
+    <p><button onclick="register()">Créer mon compte</button></p>
+    <hr>
+    <h2>Déjà inscrit ? Connexion</h2>
+    <label for="loginEmail">Adresse e-mail</label><input id="loginEmail" type="email" autocomplete="email">
+    <label for="loginPassword">Mot de passe</label><input id="loginPassword" type="password" autocomplete="current-password">
+    <p><button onclick="login()">Se connecter</button></p>
+    <div id="signedIn" class="status hidden"></div>
+    <button id="logoutBtn" class="secondary hidden" onclick="logout()">Se déconnecter</button>
+    <div id="myListings" class="hidden"><h2>Mes annonces</h2><div id="sellerListings"></div></div>
+  </section>
+
+  <section id="publish" class="panel hidden">
+    <h2>Publier une annonce</h2>
+    <p id="publishHelp" class="muted">Connectez-vous ou créez un compte pour publier une annonce.</p>
+    <div id="publishForm" class="hidden">
+      <label for="title">Nom du produit</label><input id="title" placeholder="Ex. Téléphone Samsung">
+      <label for="price">Prix en FCFA</label><input id="price" type="number" min="0" placeholder="Ex. 50000">
+      <label for="category">Catégorie</label>
+      <select id="category"><option>Électronique</option><option>Vêtements</option><option>Parfums</option><option>Téléphones</option><option>Automobiles</option><option>Maison</option><option>Services</option><option>Autres</option></select>
+      <label for="description">Description</label><textarea id="description" placeholder="Décrivez votre produit..."></textarea>
+      <p><button onclick="submitListing()">Envoyer mon annonce</button></p>
+      <p class="muted">Chaque annonce est vérifiée par l'administrateur avant sa publication.</p>
+    </div>
+  </section>
+
+  <section id="admin" class="panel hidden">
+    <h2>Administration — Annonces en attente</h2>
+    <div id="pendingListings">Chargement…</div>
+  </section>
+</main>
+<footer>KAMASTOP+ · Contact administrateur : +223 76 07 13 97</footer>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, addDoc, collection, query, where, getDocs, updateDoc, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyB3HveCwT-8ztw9t6XiTOOWWk4m1JqS37s",
+    authDomain: "kamastop-plus.firebaseapp.com",
+    databaseURL: "https://kamastop-plus-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "kamastop-plus",
+    storageBucket: "kamastop-plus.firebasestorage.app",
+    messagingSenderId: "83863929345",
+    appId: "1:83863929345:web:eda9f50cc268aa8f283600",
+    measurementId: "G-JM2CPTKCDD"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  let currentUser = null, isAdmin = false, allPublic = [];
+
+  const el = id => document.getElementById(id);
+  function notify(message, error=false) {
+    const n=el("notice"); n.textContent=message; n.classList.remove("hidden");
+    n.style.background=error?"#f8e4e1":"#edf3ee"; n.style.color=error?"#842b22":"#234b32";
+  }
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+  window.showSection = id => {
+    ["home","account","publish"].forEach(x=>el(x).classList.toggle("hidden",x!==id));
+    window.scrollTo({top:0,behavior:"smooth"});
+  };
+  window.register = async () => {
+    const name=el("regName").value.trim(), email=el("regEmail").value.trim(), password=el("regPassword").value;
+    if(!name||!email||password.length<6){notify("Remplissez le nom, l’e-mail et un mot de passe d’au moins 6 caractères.",true);return;}
+    try {
+      const cred=await createUserWithEmailAndPassword(auth,email,password);
+      await updateProfile(cred.user,{displayName:name});
+      await setDoc(doc(db,"users",cred.user.uid),{name,email,role:"seller",createdAt:serverTimestamp()});
+      notify("Compte créé avec succès. Bienvenue sur KAMASTOP+ !");
+    } catch(e){notify("Inscription impossible : "+e.message,true);}
+  };
+  window.login = async () => {
+    const email=el("loginEmail").value.trim(), password=el("loginPassword").value;
+    if(!email||!password){notify("Entrez votre e-mail et votre mot de passe.",true);return;}
+    try { await signInWithEmailAndPassword(auth,email,password); notify("Connexion réussie."); }
+    catch(e){notify("Connexion impossible : "+e.message,true);}
+  };
+  window.logout = async () => { try{await signOut(auth);notify("Vous êtes déconnecté.");}catch(e){notify(e.message,true);} };
+  onAuthStateChanged(auth, async user => {
+    currentUser=user; isAdmin=false;
+    el("signedIn").classList.toggle("hidden",!user);
+    el("logoutBtn").classList.toggle("hidden",!user);
+    el("publishForm").classList.toggle("hidden",!user);
+    el("publishHelp").classList.toggle("hidden",!!user);
+    el("myListings").classList.toggle("hidden",!user);
+    el("admin").classList.add("hidden");
+    if(user){
+      el("signedIn").textContent="Connecté : "+(user.displayName||user.email);
+      try {
+        const marker=await getDoc(doc(db,"users","admin"));
+        isAdmin=marker.exists() && marker.data().email?.toLowerCase()===user.email?.toLowerCase();
+      } catch(e){ console.warn("Vérification admin:",e); }
+      if(isAdmin){el("admin").classList.remove("hidden");loadPending();}
+      loadMyListings();
+    }
+  });
+
+  window.submitListing = async () => {
+    if(!currentUser){notify("Connectez-vous avant de publier.",true);return;}
+    const title=el("title").value.trim(), price=Number(el("price").value), description=el("description").value.trim();
+    if(!title||!el("price").value||price<0||!description){notify("Remplissez le nom, le prix et la description.",true);return;}
+    try {
+      await addDoc(collection(db,"listings"),{
+        title,price,category:el("category").value,description,
+        sellerId:currentUser.uid,sellerEmail:currentUser.email||"",
+        status:"pending",createdAt:serverTimestamp()
+      });
+      el("title").value="";el("price").value="";el("description").value="";
+      notify("Annonce envoyée ! Elle sera visible après validation par l’administrateur.");
+      loadMyListings();
+    } catch(e){notify("Envoi impossible : "+e.message,true);}
+  };
+
+  function listingCard(d,id,adminMode=false){
+    const data=d.data();
+    return `<article class="item"><h3>${escapeHtml(data.title)}</h3>
+      <div class="price">${Number(data.price||0).toLocaleString("fr-FR")} FCFA</div>
+      <p>${escapeHtml(data.category||"")}</p><p>${escapeHtml(data.description||"")}</p>
+      ${adminMode?`<p class="muted">Vendeur : ${escapeHtml(data.sellerEmail||data.sellerId||"")}</p>
+      <button onclick="approveListing('${id}')">Approuver</button> <button class="danger" onclick="rejectListing('${id}')">Refuser</button>`:""}
+      </article>`;
+  }
+  window.loadPublicListings = async () => {
+    try {
+      const snap=await getDocs(query(collection(db,"listings"),where("status","==","approved")));
+      allPublic=snap.docs;
+      renderPublic();
+    } catch(e){el("publicListings").innerHTML='<p class="muted">Impossible de charger les annonces pour le moment.</p>';console.error(e);}
+  };
+  function renderPublic(){
+    const term=el("search").value.trim().toLowerCase();
+    const docs=allPublic.filter(d=>[d.data().title,d.data().description,d.data().category].join(" ").toLowerCase().includes(term));
+    el("publicListings").innerHTML=docs.length?docs.map(d=>listingCard(d,d.id)).join(""):"<p class='muted'>Aucune annonce approuvée pour le moment.</p>";
+  }
+  window.filterListings=renderPublic;
+  async function loadMyListings(){
+    if(!currentUser)return;
+    try{
+      const snap=await getDocs(query(collection(db,"listings"),where("sellerId","==",currentUser.uid)));
+      el("sellerListings").innerHTML=snap.empty?"<p class='muted'>Vous n’avez pas encore publié d’annonce.</p>":snap.docs.map(d=>`<div class="item"><b>${escapeHtml(d.data().title)}</b><p class="muted">Statut : ${escapeHtml(d.data().status)}</p></div>`).join("");
+    }catch(e){el("sellerListings").textContent="Impossible de charger vos annonces : "+e.message;}
+  }
+  async function loadPending(){
+    try{
+      const snap=await getDocs(query(collection(db,"listings"),where("status","==","pending")));
+      el("pendingListings").innerHTML=snap.empty?"<p class='muted'>Aucune annonce en attente.</p>":snap.docs.map(d=>listingCard(d,d.id,true)).join("");
+    }catch(e){el("pendingListings").textContent="Chargement impossible : "+e.message;}
+  }
+  window.approveListing=async id=>{try{await updateDoc(doc(db,"listings",id),{status:"approved"});notify("Annonce approuvée.");loadPending();loadPublicListings();}catch(e){notify("Action impossible : "+e.message,true);}};
+  window.rejectListing=async id=>{try{await updateDoc(doc(db,"listings",id),{status:"rejected"});notify("Annonce refusée.");loadPending();}catch(e){notify("Action impossible : "+e.message,true);}};
+  loadPublicListings();
+  if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(e=>console.warn("Service worker:",e)));}
+</script>
+</body>
+</html>
