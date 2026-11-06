@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111827">
+  <title>KAMASTOP+ — Acheter et vendre au Mali</title>
+  <style>
+    :root{--dark:#111827;--gold:#f4b942;--bg:#f4f6f8;--muted:#667085;--green:#15803d}
+    *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#182230}
+    header{background:var(--dark);color:white;padding:18px 16px}
+    .wrap{max-width:980px;margin:auto;padding:0 14px}
+    .brand{font-size:25px;font-weight:800;letter-spacing:.4px}.brand span{color:var(--gold)}
+    header p{margin:6px 0 0;color:#d0d5dd;font-size:14px}
+    nav{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+    button,.btn{border:0;border-radius:9px;padding:11px 14px;font-weight:700;cursor:pointer;background:var(--gold);color:#241800}
+    button.secondary{background:#e5e7eb;color:#182230}button.dark{background:var(--dark);color:white}
+    main{padding:20px 0 48px}.panel{background:white;border:1px solid #e4e7ec;border-radius:14px;padding:17px;margin:14px 0;box-shadow:0 3px 12px #1018280b}
+    h1{font-size:23px;margin:0 0 8px}h2{font-size:18px;margin:0 0 13px}
+    .muted{color:var(--muted);font-size:14px}.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1}
+    input,select,textarea{width:100%;padding:12px;border:1px solid #d0d5dd;border-radius:9px;font:inherit;margin:5px 0 10px;background:white}
+    textarea{min-height:90px;resize:vertical}label{font-weight:700;font-size:14px}
+    .hidden{display:none!important}.status{padding:10px 12px;border-radius:9px;background:#eff6ff;color:#1d4ed8;margin:10px 0;font-size:14px}
+    .error{background:#fef2f2;color:#b42318}.success{background:#ecfdf3;color:#027a48}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+    .item{border:1px solid #eaecf0;border-radius:12px;padding:13px;background:#fff}
+    .price{font-size:19px;font-weight:800;color:#137547;margin:8px 0}
+    .tag{display:inline-block;padding:4px 8px;border-radius:20px;background:#f2f4f7;font-size:12px}
+    footer{text-align:center;padding:22px;color:#667085;font-size:13px}
+    @media(max-width:520px){.brand{font-size:22px}button{padding:10px 11px}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="brand">KAMA<span>STOP</span>+</div>
+    <p>La plateforme pour acheter et vendre au Mali</p>
+    <nav>
+      <button class="secondary" id="homeBtn">Accueil</button>
+      <button id="loginNav">Connexion</button>
+      <button id="signupNav">Créer un compte</button>
+      <button class="secondary" id="logoutBtn" class="hidden">Déconnexion</button>
+    </nav>
+    <p id="userLine" class="muted"></p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="panel">
+    <h1>Bienvenue sur KAMASTOP+</h1>
+    <p class="muted">Découvre les annonces publiées par les vendeurs. Pour publier, crée un compte ou connecte-toi. Chaque annonce est vérifiée par l'administration avant sa mise en ligne.</p>
+    <div class="row">
+      <input id="searchInput" placeholder="Rechercher un produit ou un service…">
+      <select id="categoryFilter">
+        <option value="">Toutes les catégories</option>
+        <option>Électronique</option><option>Vêtements</option><option>Parfums</option>
+        <option>Téléphones</option><option>Automobiles</option><option>Maison</option><option>Services</option>
+      </select>
+    </div>
+  </section>
+
+  <section id="authPanel" class="panel hidden">
+    <h2 id="authTitle">Connexion</h2>
+    <div id="signupNameWrap" class="hidden"><label>Nom complet</label><input id="fullName" placeholder="Ton nom"></div>
+    <label>Adresse e-mail</label><input id="email" type="email" autocomplete="email" placeholder="exemple@email.com">
+    <label>Mot de passe</label><input id="password" type="password" autocomplete="current-password" placeholder="Au moins 6 caractères">
+    <div class="row"><button id="authSubmit">Se connecter</button><button class="secondary" id="closeAuth">Fermer</button></div>
+    <div id="authMessage" class="status hidden"></div>
+  </section>
+
+  <section id="sellerPanel" class="panel hidden">
+    <h2>Publier une annonce</h2>
+    <p class="muted">Ton annonce sera d'abord envoyée à l'administration pour validation.</p>
+    <label>Nom du produit ou service</label><input id="listingTitle" placeholder="Ex. Téléphone Samsung">
+    <label>Prix (FCFA)</label><input id="listingPrice" type="number" min="0" placeholder="Ex. 50000">
+    <label>Catégorie</label>
+    <select id="listingCategory">
+      <option>Électronique</option><option>Vêtements</option><option>Parfums</option><option>Téléphones</option><option>Automobiles</option><option>Maison</option><option>Services</option>
+    </select>
+    <label>Description</label><textarea id="listingDescription" placeholder="Décris ton produit ou service…"></textarea>
+    <label>Téléphone / WhatsApp</label><input id="listingPhone" placeholder="+223 …">
+    <button id="sendListing">Envoyer mon annonce</button>
+    <div id="listingMessage" class="status hidden"></div>
+  </section>
+
+  <section id="myListingsPanel" class="panel hidden">
+    <h2>Mes annonces</h2><div id="myListings" class="grid"></div>
+  </section>
+
+  <section id="adminPanel" class="panel hidden">
+    <h2>Administration — annonces à vérifier</h2>
+    <p class="muted">Valide uniquement les annonces correctes.</p>
+    <div id="pendingListings" class="grid"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Annonces disponibles</h2>
+    <div id="publicListings" class="grid"><p class="muted">Chargement des annonces…</p></div>
+  </section>
+</main>
+<footer>KAMASTOP+ · Bamako, Mali · Contact administrateur : +223 76 07 13 97</footer>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+  import { getFirestore, collection, doc, setDoc, addDoc, getDoc, getDocs, query, where, orderBy, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyB3HveCwT-8ztw9t6XiTOOWWk4m1JqS37s",
+    authDomain: "kamastop-plus.firebaseapp.com",
+    databaseURL: "https://kamastop-plus-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "kamastop-plus",
+    storageBucket: "kamastop-plus.firebasestorage.app",
+    messagingSenderId: "83863929345",
+    appId: "1:83863929345:web:eda9f50cc268aa8f283600",
+    measurementId: "G-JM2CPTKCDD"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  let currentUser = null, isAdmin = false, authMode = "login", allPublic = [];
+
+  const $ = id => document.getElementById(id);
+  function message(id, text, type="") {
+    const el=$(id); el.textContent=text; el.className="status"+(type ? " "+type : "");
+    el.classList.remove("hidden");
+  }
+  function showAuth(mode) {
+    authMode=mode; $("authPanel").classList.remove("hidden");
+    $("authTitle").textContent=mode==="signup" ? "Créer un compte vendeur" : "Connexion";
+    $("authSubmit").textContent=mode==="signup" ? "Créer mon compte" : "Se connecter";
+    $("signupNameWrap").classList.toggle("hidden",mode!=="signup");
+    $("authMessage").classList.add("hidden");
+    $("authPanel").scrollIntoView({behavior:"smooth"});
+  }
+  function formatPrice(value) {
+    const n=Number(value||0); return n.toLocaleString("fr-FR")+" FCFA";
+  }
+  function card(data, admin=false, id="") {
+    const el=document.createElement("article"); el.className="item";
+    const title=document.createElement("h3"); title.textContent=data.title||"Annonce";
+    const cat=document.createElement("span"); cat.className="tag"; cat.textContent=data.category||"Autre";
+    const price=document.createElement("div"); price.className="price"; price.textContent=formatPrice(data.price);
+    const desc=document.createElement("p"); desc.textContent=data.description||"";
+    const phone=document.createElement("p"); phone.className="muted"; phone.textContent=data.phone ? "Contact : "+data.phone : "";
+    el.append(title,cat,price,desc,phone);
+    if(data.status){const s=document.createElement("p");s.className="muted";s.textContent="Statut : "+(data.status==="pending"?"En attente":data.status==="approved"?"Validée":"Refusée");el.append(s);}
+    if(admin){
+      const row=document.createElement("div");row.className="row";
+      const yes=document.createElement("button");yes.textContent="Valider";
+      yes.onclick=async()=>{try{await updateDoc(doc(db,"listings",id),{status:"approved"});await loadAdmin();await loadPublic();}catch(e){alert("Erreur : "+e.message)}};
+      const no=document.createElement("button");no.textContent="Refuser";no.className="secondary";
+      no.onclick=async()=>{try{await updateDoc(doc(db,"listings",id),{status:"rejected"});await loadAdmin();}catch(e){alert("Erreur : "+e.message)}};
+      row.append(yes,no);el.append(row);
+    }
+    return el;
+  }
+  async function loadPublic(){
+    const box=$("publicListings");box.replaceChildren();
+    try{
+      const snap=await getDocs(query(collection(db,"listings"),where("status","==","approved")));
+      allPublic=snap.docs.map(d=>({id:d.id,...d.data()})); renderPublic();
+    }catch(e){box.textContent="Impossible de charger les annonces pour le moment. Vérifie la connexion et les règles Firestore.";}
+  }
+  function renderPublic(){
+    const box=$("publicListings");box.replaceChildren();
+    const term=$("searchInput").value.trim().toLowerCase(), cat=$("categoryFilter").value;
+    const rows=allPublic.filter(x=>(!cat||x.category===cat)&&(!term||[x.title,x.description,x.category].join(" ").toLowerCase().includes(term)));
+    if(!rows.length){box.textContent="Aucune annonce disponible pour le moment.";return;}
+    rows.forEach(x=>box.append(card(x)));
+  }
+  async function loadMine(){
+    if(!currentUser)return;
+    const box=$("myListings");box.replaceChildren();
+    try{
+      const snap=await getDocs(query(collection(db,"listings"),where("sellerId","==",currentUser.uid)));
+      if(snap.empty){box.textContent="Tu n'as pas encore publié d'annonce.";return;}
+      snap.forEach(d=>box.append(card(d.data())));
+    }catch(e){box.textContent="Impossible de charger tes annonces.";}
+  }
+  async function loadAdmin(){
+    if(!isAdmin)return;
+    const box=$("pendingListings");box.replaceChildren();
+    try{
+      const snap=await getDocs(query(collection(db,"listings"),where("status","==","pending")));
+      if(snap.empty){box.textContent="Aucune annonce en attente.";return;}
+      snap.forEach(d=>box.append(card(d.data(),true,d.id)));
+    }catch(e){box.textContent="Accès administrateur impossible. Vérifie le compte admin et les règles Firestore.";}
+  }
+
+  $("loginNav").onclick=()=>showAuth("login");
+  $("signupNav").onclick=()=>showAuth("signup");
+  $("closeAuth").onclick=()=>$("authPanel").classList.add("hidden");
+  $("homeBtn").onclick=()=>window.scrollTo({top:0,behavior:"smooth"});
+  $("logoutBtn").onclick=async()=>{await signOut(auth);};
+  $("searchInput").addEventListener("input",renderPublic);
+  $("categoryFilter").addEventListener("change",renderPublic);
+
+  $("authSubmit").onclick=async()=>{
+    const email=$("email").value.trim(), password=$("password").value;
+    try{
+      if(authMode==="signup"){
+        const name=$("fullName").value.trim();
+        if(!name)throw new Error("Entre ton nom complet.");
+        const cred=await createUserWithEmailAndPassword(auth,email,password);
+        await setDoc(doc(db,"users",cred.user.uid),{name,email,role:"seller",createdAt:serverTimestamp()});
+        message("authMessage","Compte créé avec succès !","success");
+      }else{
+        await signInWithEmailAndPassword(auth,email,password);
+        message("authMessage","Connexion réussie !","success");
+      }
+    }catch(e){message("authMessage",e.code==="auth/email-already-in-use"?"Cette adresse e-mail possède déjà un compte.":e.code==="auth/weak-password"?"Le mot de passe doit contenir au moins 6 caractères.":e.code==="auth/invalid-credential"?"E-mail ou mot de passe incorrect.":e.message,"error");}
+  };
+
+  $("sendListing").onclick=async()=>{
+    if(!currentUser){showAuth("login");return;}
+    const title=$("listingTitle").value.trim(), price=Number($("listingPrice").value), description=$("listingDescription").value.trim();
+    if(!title||!price||price<0||!description){message("listingMessage","Remplis le nom, le prix et la description.","error");return;}
+    try{
+      await addDoc(collection(db,"listings"),{
+        title,price,description,category:$("listingCategory").value,
+        phone:$("listingPhone").value.trim(),sellerId:currentUser.uid,
+        status:"pending",createdAt:serverTimestamp()
+      });
+      $("listingTitle").value="";$("listingPrice").value="";$("listingDescription").value="";$("listingPhone").value="";
+      message("listingMessage","Annonce envoyée ! Elle sera visible après validation par l'administration.","success");
+      await loadMine();
+    }catch(e){message("listingMessage","Envoi impossible : "+e.message,"error");}
+  };
+
+  onAuthStateChanged(auth,async user=>{
+    currentUser=user;isAdmin=false;
+    $("authPanel").classList.add("hidden");
+    $("sellerPanel").classList.toggle("hidden",!user);
+    $("myListingsPanel").classList.toggle("hidden",!user);
+    $("logoutBtn").classList.toggle("hidden",!user);
+    $("loginNav").classList.toggle("hidden",!!user);
+    $("signupNav").classList.toggle("hidden",!!user);
+    $("userLine").textContent=user?"Connecté : "+user.email:"Tu n'es pas connecté.";
+    $("adminPanel").classList.add("hidden");
+    if(user){
+      try{
+        const adminDoc=await getDoc(doc(db,"users","admin"));
+        isAdmin=adminDoc.exists()&&adminDoc.data().email===user.email;
+      }catch(e){isAdmin=false;}
+      $("adminPanel").classList.toggle("hidden",!isAdmin);
+      await loadMine();
+      if(isAdmin)await loadAdmin();
+    }
+    await loadPublic();
+  });
+
+  if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));}
+</script>
+</body>
+</html>
